@@ -52,16 +52,17 @@ for host in custom_hosts:
     if host.strip():
         allowed_hosts.append(host.strip())
 
-# Production Railway configuration
-if config('RAILWAY_ENVIRONMENT', default=False):
-    # Get the actual Railway domain from environment or use wildcard
-    railway_domain = config('RAILWAY_STATIC_URL', default='').replace('https://', '').replace('http://', '')
-    if railway_domain:
-        ALLOWED_HOSTS = [railway_domain, '*.railway.app', '*.up.railway.app', 'localhost', '127.0.0.1']
-    else:
-        ALLOWED_HOSTS = ['*']  # Fallback to allow all
+# Simple ALLOWED_HOSTS for Railway - allow all in production
+if config('RAILWAY_ENVIRONMENT', default=False) or config('RAILWAY_STATIC_URL', default=None):
+    # Allow all hosts in Railway environment to avoid 400 errors
+    ALLOWED_HOSTS = ['*']
+    print(f"[RAILWAY] Using ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+    print(f"[RAILWAY] RAILWAY_ENVIRONMENT: {config('RAILWAY_ENVIRONMENT', default=False)}")
+    print(f"[RAILWAY] RAILWAY_STATIC_URL: {config('RAILWAY_STATIC_URL', default=None)}")
 else:
-    ALLOWED_HOSTS = allowed_hosts
+    # Local development
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+    print(f"[LOCAL] Using ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
 
 # Application definition
@@ -294,13 +295,13 @@ if config('RAILWAY_ENVIRONMENT', default=False):
     if railway_url:
         CSRF_TRUSTED_ORIGINS.append(railway_url)
     
-    # Also add the domain from ALLOWED_HOSTS
-    for host in ALLOWED_HOSTS:
-        if host and host != '*' and not host.startswith('*.') and not host.startswith('.'):
-            CSRF_TRUSTED_ORIGINS.extend([
-                f"https://{host}",
-                f"http://{host}"
-            ])
+    # Add common Railway domain patterns
+    CSRF_TRUSTED_ORIGINS.extend([
+        'https://*.railway.app',
+        'https://*.up.railway.app',
+        'http://*.railway.app',
+        'http://*.up.railway.app'
+    ])
 
 # Add custom trusted origins
 custom_origins = config('CSRF_TRUSTED_ORIGINS', default='').split(',')
