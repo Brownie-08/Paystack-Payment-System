@@ -104,6 +104,13 @@ WSGI_APPLICATION = "payment_project.wsgi.application"
 import dj_database_url
 import os
 
+# Check if DATABASE_URL is available
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    print(f"[DATABASE] Found DATABASE_URL: {database_url[:20]}...")
+else:
+    print("[DATABASE] No DATABASE_URL found, using SQLite")
+
 # Always use dj_database_url for better compatibility
 DATABASES = {
     'default': dj_database_url.config(
@@ -118,7 +125,7 @@ print(f"[DATABASE] Engine: {DATABASES['default']['ENGINE']}")
 print(f"[DATABASE] Name: {DATABASES['default']['NAME']}")
 if 'HOST' in DATABASES['default']:
     print(f"[DATABASE] Host: {DATABASES['default']['HOST']}")
-print(f"[DATABASE] Using DATABASE_URL: {bool(config('DATABASE_URL', default=None))}")
+print(f"[DATABASE] Using DATABASE_URL: {bool(database_url)}")
 
 # SQLite configuration (backup for development)
 # DATABASES = {
