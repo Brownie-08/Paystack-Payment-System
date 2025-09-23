@@ -27,38 +27,19 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-_)r2%ikc=k10t3b@3w6y*
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 # ALLOWED_HOSTS configuration for Railway
-RAILWAY_STATIC_URL = config('RAILWAY_STATIC_URL', default=None)
-RAILWAY_PUBLIC_DOMAIN = config('RAILWAY_PUBLIC_DOMAIN', default=None)
-
-allowed_hosts = ['localhost', '127.0.0.1', '0.0.0.0']
-
-# Add Railway domains
-if RAILWAY_STATIC_URL:
-    allowed_hosts.append(RAILWAY_STATIC_URL.replace('https://', '').replace('http://', ''))
-if RAILWAY_PUBLIC_DOMAIN:
-    allowed_hosts.append(RAILWAY_PUBLIC_DOMAIN)
-
-# Add wildcard Railway domains
-allowed_hosts.extend([
-    '*.railway.app',
-    '*.up.railway.app',
-    '.railway.app',
-    '.up.railway.app'
-])
-
-# Add custom domains from environment
-custom_hosts = config('ALLOWED_HOSTS', default='').split(',')
-for host in custom_hosts:
-    if host.strip():
-        allowed_hosts.append(host.strip())
-
-# Simple ALLOWED_HOSTS for Railway - allow all in production
-if config('RAILWAY_ENVIRONMENT', default=False) or config('RAILWAY_STATIC_URL', default=None):
-    # Allow all hosts in Railway environment to avoid 400 errors
-    ALLOWED_HOSTS = ['*']
-    print(f"[RAILWAY] Using ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-    print(f"[RAILWAY] RAILWAY_ENVIRONMENT: {config('RAILWAY_ENVIRONMENT', default=False)}")
-    print(f"[RAILWAY] RAILWAY_STATIC_URL: {config('RAILWAY_STATIC_URL', default=None)}")
+if config('RAILWAY_ENVIRONMENT', default=False):
+    # Railway environment - check if custom ALLOWED_HOSTS is set
+    custom_hosts = config('ALLOWED_HOSTS', default='')
+    if custom_hosts:
+        # Use custom hosts from environment variable
+        ALLOWED_HOSTS = [host.strip() for host in custom_hosts.split(',') if host.strip()]
+        print(f"[RAILWAY] Using custom ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+    else:
+        # Fallback to allow all hosts
+        ALLOWED_HOSTS = ['*']
+        print(f"[RAILWAY] Using wildcard ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+    
+    print(f"[RAILWAY] RAILWAY_ENVIRONMENT: {config('RAILWAY_ENVIRONMENT')}")
 else:
     # Local development
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
