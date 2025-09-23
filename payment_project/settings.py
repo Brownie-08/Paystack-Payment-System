@@ -52,9 +52,14 @@ for host in custom_hosts:
     if host.strip():
         allowed_hosts.append(host.strip())
 
-# Temporary: Allow all hosts in production for Railway
+# Production Railway configuration
 if config('RAILWAY_ENVIRONMENT', default=False):
-    ALLOWED_HOSTS = ['*']  # Allow all hosts in Railway
+    # Get the actual Railway domain from environment or use wildcard
+    railway_domain = config('RAILWAY_STATIC_URL', default='').replace('https://', '').replace('http://', '')
+    if railway_domain:
+        ALLOWED_HOSTS = [railway_domain, '*.railway.app', '*.up.railway.app', 'localhost', '127.0.0.1']
+    else:
+        ALLOWED_HOSTS = ['*']  # Fallback to allow all
 else:
     ALLOWED_HOSTS = allowed_hosts
 
@@ -274,6 +279,34 @@ else:
             ])
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Trusted Origins for Railway
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://localhost:8000",
+    "https://127.0.0.1:8000",
+]
+
+# Add Railway domain to CSRF trusted origins
+if config('RAILWAY_ENVIRONMENT', default=False):
+    railway_url = config('RAILWAY_STATIC_URL', default='')
+    if railway_url:
+        CSRF_TRUSTED_ORIGINS.append(railway_url)
+    
+    # Also add the domain from ALLOWED_HOSTS
+    for host in ALLOWED_HOSTS:
+        if host and host != '*' and not host.startswith('*.') and not host.startswith('.'):
+            CSRF_TRUSTED_ORIGINS.extend([
+                f"https://{host}",
+                f"http://{host}"
+            ])
+
+# Add custom trusted origins
+custom_origins = config('CSRF_TRUSTED_ORIGINS', default='').split(',')
+for origin in custom_origins:
+    if origin.strip():
+        CSRF_TRUSTED_ORIGINS.append(origin.strip())
 
 # Paystack settings
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
