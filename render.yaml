@@ -29,16 +29,18 @@ services:
       - key: FRONTEND_CALLBACK_URL
         value: https://yourfrontend.com/payment/callback
       - key: BACKEND_WEBHOOK_URL
-        sync: false
         value: https://paystack-payment-app.onrender.com/api/payments/webhook/
       # CORS Configuration
       - key: CORS_ALLOW_ALL_ORIGINS
         value: false
       - key: RENDER_EXTERNAL_URL
         value: https://paystack-payment-app.onrender.com
+      # Additional environment variables
+      - key: RENDER_EXTERNAL_HOSTNAME
+        value: paystack-payment-app.onrender.com
     
   # PostgreSQL Database
-  - type: pgsql
+  - type: postgresql
     name: paystack-payment-db
     databaseName: paystack_payment
     user: paystack_user
