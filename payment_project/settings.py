@@ -93,7 +93,7 @@ WSGI_APPLICATION = "payment_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Database configuration
+# Database configuration - PostgreSQL Only
 import dj_database_url
 import os
 
@@ -101,17 +101,42 @@ import os
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     print(f"[DATABASE] Found DATABASE_URL: {database_url[:20]}...")
+    # Use DATABASE_URL for both development and production
+    DATABASES = {
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    
+    # Add SSL requirement for production
+    if not DEBUG:
+        DATABASES['default']['OPTIONS'] = {
+            'sslmode': 'require',
+        }
 else:
-    print("[DATABASE] No DATABASE_URL found, using SQLite")
-
-# Always use dj_database_url for better compatibility
-DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+    print("[DATABASE] No DATABASE_URL found, using individual PostgreSQL settings")
+    # Use individual PostgreSQL settings
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='payment_db'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default='postgres'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432', cast=int),
+            'OPTIONS': {
+                'connect_timeout': 20,
+            },
+        }
+    }
+    
+    # In production, DATABASE_URL should always be provided
+    if not DEBUG:
+        raise ValueError(
+            "DATABASE_URL environment variable is required in production. "
+            "Make sure your Render PostgreSQL database is connected."
+        )
 
 # Print database configuration for debugging
 print(f"[DATABASE] Engine: {DATABASES['default']['ENGINE']}")
@@ -119,14 +144,7 @@ print(f"[DATABASE] Name: {DATABASES['default']['NAME']}")
 if 'HOST' in DATABASES['default']:
     print(f"[DATABASE] Host: {DATABASES['default']['HOST']}")
 print(f"[DATABASE] Using DATABASE_URL: {bool(database_url)}")
-
-# SQLite configuration (backup for development)
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
+print(f"[DATABASE] Debug mode: {DEBUG}")
 
 # Local memory cache (for development - works without Redis)
 CACHES = {
