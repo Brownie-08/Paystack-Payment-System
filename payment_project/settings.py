@@ -290,9 +290,15 @@ for origin in custom_origins:
     if origin.strip():
         CSRF_TRUSTED_ORIGINS.append(origin.strip())
 
-# Paystack settings
-PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
-PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
+# Paystack settings with error handling
+try:
+    PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
+    PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
+except Exception as e:
+    print(f"[WARNING] Paystack keys not found: {e}")
+    PAYSTACK_SECRET_KEY = 'dummy-key-for-startup'
+    PAYSTACK_PUBLIC_KEY = 'dummy-key-for-startup'
+
 PAYSTACK_BASE_URL = config('PAYSTACK_BASE_URL', default='https://api.paystack.co')
 
 # Application URLs
