@@ -26,7 +26,37 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-_)r2%ikc=k10t3b@3w6y*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app,*.up.railway.app,0.0.0.0').split(',')
+# ALLOWED_HOSTS configuration for Railway
+RAILWAY_STATIC_URL = config('RAILWAY_STATIC_URL', default=None)
+RAILWAY_PUBLIC_DOMAIN = config('RAILWAY_PUBLIC_DOMAIN', default=None)
+
+allowed_hosts = ['localhost', '127.0.0.1', '0.0.0.0']
+
+# Add Railway domains
+if RAILWAY_STATIC_URL:
+    allowed_hosts.append(RAILWAY_STATIC_URL.replace('https://', '').replace('http://', ''))
+if RAILWAY_PUBLIC_DOMAIN:
+    allowed_hosts.append(RAILWAY_PUBLIC_DOMAIN)
+
+# Add wildcard Railway domains
+allowed_hosts.extend([
+    '*.railway.app',
+    '*.up.railway.app',
+    '.railway.app',
+    '.up.railway.app'
+])
+
+# Add custom domains from environment
+custom_hosts = config('ALLOWED_HOSTS', default='').split(',')
+for host in custom_hosts:
+    if host.strip():
+        allowed_hosts.append(host.strip())
+
+# Temporary: Allow all hosts in production for Railway
+if config('RAILWAY_ENVIRONMENT', default=False):
+    ALLOWED_HOSTS = ['*']  # Allow all hosts in Railway
+else:
+    ALLOWED_HOSTS = allowed_hosts
 
 
 # Application definition
