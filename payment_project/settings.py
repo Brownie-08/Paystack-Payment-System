@@ -28,17 +28,37 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 # ALLOWED_HOSTS configuration for Railway
 if config('RAILWAY_ENVIRONMENT', default=False):
-    # Railway environment - check if custom ALLOWED_HOSTS is set
+    # Railway environment - be very permissive with hosts
+    ALLOWED_HOSTS = [
+        '*',  # Allow all hosts
+        'localhost',
+        '127.0.0.1', 
+        '0.0.0.0',
+        '.railway.app',
+        '.up.railway.app',
+        '.railway-registry.com',
+    ]
+    
+    # Add custom hosts from environment if provided
     custom_hosts = config('ALLOWED_HOSTS', default='')
     if custom_hosts:
-        # Use custom hosts from environment variable
-        ALLOWED_HOSTS = [host.strip() for host in custom_hosts.split(',') if host.strip()]
-        print(f"[RAILWAY] Using custom ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-    else:
-        # Fallback to allow all hosts
-        ALLOWED_HOSTS = ['*']
-        print(f"[RAILWAY] Using wildcard ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+        for host in custom_hosts.split(','):
+            if host.strip():
+                ALLOWED_HOSTS.append(host.strip())
     
+    # Add Railway-specific environment variables if available
+    railway_static_url = config('RAILWAY_STATIC_URL', default='')
+    if railway_static_url:
+        # Extract domain from URL
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(railway_static_url)
+            if parsed.netloc:
+                ALLOWED_HOSTS.append(parsed.netloc)
+        except:
+            pass
+    
+    print(f"[RAILWAY] Using ALLOWED_HOSTS: {ALLOWED_HOSTS[:3]}... (showing first 3)")
     print(f"[RAILWAY] RAILWAY_ENVIRONMENT: {config('RAILWAY_ENVIRONMENT')}")
 else:
     # Local development
@@ -65,6 +85,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "payment_project.middleware.HealthCheckMiddleware",  # Handle health checks first
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",

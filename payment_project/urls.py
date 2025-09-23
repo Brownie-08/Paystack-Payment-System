@@ -23,7 +23,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView
 )
 from payments.views import HomePageView, payment_stats_api
-from payments.views.health import health_check, simple_health
+from payments.views.health import health_check, simple_health, raw_health
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -31,6 +31,7 @@ urlpatterns = [
     # Health checks for deployment
     path('health/', health_check, name='health-check'),
     path('health/simple/', simple_health, name='simple-health'),
+    path('health/raw/', raw_health, name='raw-health'),
     
     # Homepage
     path('', HomePageView.as_view(), name='home'),
