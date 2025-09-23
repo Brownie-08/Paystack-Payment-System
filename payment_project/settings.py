@@ -104,44 +104,21 @@ WSGI_APPLICATION = "payment_project.wsgi.application"
 import dj_database_url
 import os
 
-# Use Railway's DATABASE_URL if available, otherwise use local PostgreSQL or SQLite
-DATABASE_URL = config('DATABASE_URL', default=None)
+# Always use dj_database_url for better compatibility
+DATABASES = {
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
 
-if DATABASE_URL:
-    # Production: Use Railway's DATABASE_URL (PostgreSQL)
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
-    }
-elif os.environ.get('RAILWAY_ENVIRONMENT'):
-    # Railway environment but no DATABASE_URL yet (use SQLite temporarily)
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
-else:
-    # Local development: Try PostgreSQL first, fallback to SQLite
-    try:
-        import psycopg2
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.postgresql",
-                "NAME": config('DB_NAME', default='payment_db'),
-                "USER": config('DB_USER', default='postgres'),
-                "PASSWORD": config('DB_PASSWORD', default='9123721167'),
-                "HOST": config('DB_HOST', default='localhost'),
-                "PORT": config('DB_PORT', default='5432'),
-            }
-        }
-    except ImportError:
-        # Fallback to SQLite if psycopg2 is not available
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
+# Print database configuration for debugging
+print(f"[DATABASE] Engine: {DATABASES['default']['ENGINE']}")
+print(f"[DATABASE] Name: {DATABASES['default']['NAME']}")
+if 'HOST' in DATABASES['default']:
+    print(f"[DATABASE] Host: {DATABASES['default']['HOST']}")
+print(f"[DATABASE] Using DATABASE_URL: {bool(config('DATABASE_URL', default=None))}")
 
 # SQLite configuration (backup for development)
 # DATABASES = {
