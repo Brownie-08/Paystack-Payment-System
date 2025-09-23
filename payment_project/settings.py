@@ -86,26 +86,35 @@ WSGI_APPLICATION = "payment_project.wsgi.application"
 # Database configuration - Railway provides DATABASE_URL
 import dj_database_url
 
-# Use Railway's DATABASE_URL if available, otherwise use local PostgreSQL
+# Use Railway's DATABASE_URL if available, otherwise use local PostgreSQL or SQLite
 DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
-    # Production: Use Railway's DATABASE_URL
+    # Production: Use Railway's DATABASE_URL (PostgreSQL)
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
-    # Local development: Use PostgreSQL or fallback to SQLite
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": config('DB_NAME', default='payment_db'),
-            "USER": config('DB_USER', default='postgres'),
-            "PASSWORD": config('DB_PASSWORD', default='9123721167'),
-            "HOST": config('DB_HOST', default='localhost'),
-            "PORT": config('DB_PORT', default='5432'),
+    # Local development: Try PostgreSQL first, fallback to SQLite
+    try:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": config('DB_NAME', default='payment_db'),
+                "USER": config('DB_USER', default='postgres'),
+                "PASSWORD": config('DB_PASSWORD', default='9123721167'),
+                "HOST": config('DB_HOST', default='localhost'),
+                "PORT": config('DB_PORT', default='5432'),
+            }
         }
-    }
+    except:
+        # Fallback to SQLite for development/testing
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 
 # SQLite configuration (backup for development)
 # DATABASES = {
