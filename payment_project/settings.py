@@ -85,6 +85,7 @@ WSGI_APPLICATION = "payment_project.wsgi.application"
 
 # Database configuration - Railway provides DATABASE_URL
 import dj_database_url
+import os
 
 # Use Railway's DATABASE_URL if available, otherwise use local PostgreSQL or SQLite
 DATABASE_URL = config('DATABASE_URL', default=None)
@@ -94,9 +95,18 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
+elif os.environ.get('RAILWAY_ENVIRONMENT'):
+    # Railway environment but no DATABASE_URL yet (use SQLite temporarily)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 else:
     # Local development: Try PostgreSQL first, fallback to SQLite
     try:
+        import psycopg2
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
@@ -107,8 +117,8 @@ else:
                 "PORT": config('DB_PORT', default='5432'),
             }
         }
-    except:
-        # Fallback to SQLite for development/testing
+    except ImportError:
+        # Fallback to SQLite if psycopg2 is not available
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
