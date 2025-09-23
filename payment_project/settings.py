@@ -26,44 +26,17 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-_)r2%ikc=k10t3b@3w6y*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# ALLOWED_HOSTS configuration for Railway
-if config('RAILWAY_ENVIRONMENT', default=False):
-    # Railway environment - be very permissive with hosts
-    ALLOWED_HOSTS = [
-        '*',  # Allow all hosts
-        'localhost',
-        '127.0.0.1', 
-        '0.0.0.0',
-        '.railway.app',
-        '.up.railway.app',
-        '.railway-registry.com',
-    ]
-    
-    # Add custom hosts from environment if provided
+# ALLOWED_HOSTS configuration
+if DEBUG:
+    # Development
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+else:
+    # Production - Render provides RENDER_EXTERNAL_HOSTNAME
+    ALLOWED_HOSTS = [config('RENDER_EXTERNAL_HOSTNAME', default='localhost')]
+    # Also allow custom hosts from environment
     custom_hosts = config('ALLOWED_HOSTS', default='')
     if custom_hosts:
-        for host in custom_hosts.split(','):
-            if host.strip():
-                ALLOWED_HOSTS.append(host.strip())
-    
-    # Add Railway-specific environment variables if available
-    railway_static_url = config('RAILWAY_STATIC_URL', default='')
-    if railway_static_url:
-        # Extract domain from URL
-        from urllib.parse import urlparse
-        try:
-            parsed = urlparse(railway_static_url)
-            if parsed.netloc:
-                ALLOWED_HOSTS.append(parsed.netloc)
-        except:
-            pass
-    
-    print(f"[RAILWAY] Using ALLOWED_HOSTS: {ALLOWED_HOSTS[:3]}... (showing first 3)")
-    print(f"[RAILWAY] RAILWAY_ENVIRONMENT: {config('RAILWAY_ENVIRONMENT')}")
-else:
-    # Local development
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
-    print(f"[LOCAL] Using ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+        ALLOWED_HOSTS.extend([host.strip() for host in custom_hosts.split(',') if host.strip()])
 
 
 # Application definition
@@ -85,7 +58,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "payment_project.middleware.HealthCheckMiddleware",  # Handle health checks first
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -121,7 +93,7 @@ WSGI_APPLICATION = "payment_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Database configuration - Railway provides DATABASE_URL
+# Database configuration
 import dj_database_url
 import os
 
@@ -244,7 +216,7 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# CORS settings - Allow Railway domains
+# CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -256,18 +228,14 @@ CORS_ALLOWED_ORIGINS = [
 if config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool):
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    # Add Railway domains from environment
-    railway_domains = config('RAILWAY_DOMAINS', default='').split(',')
-    for domain in railway_domains:
-        if domain.strip():
-            CORS_ALLOWED_ORIGINS.extend([
-                f"https://{domain.strip()}",
-                f"http://{domain.strip()}",
-            ])
+    # Add Render domain from environment
+    render_url = config('RENDER_EXTERNAL_URL', default='')
+    if render_url:
+        CORS_ALLOWED_ORIGINS.append(render_url)
 
 CORS_ALLOW_CREDENTIALS = True
 
-# CSRF Trusted Origins for Railway
+# CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
@@ -275,18 +243,16 @@ CSRF_TRUSTED_ORIGINS = [
     "https://127.0.0.1:8000",
 ]
 
-# Add Railway domain to CSRF trusted origins
-if config('RAILWAY_ENVIRONMENT', default=False):
-    railway_url = config('RAILWAY_STATIC_URL', default='')
-    if railway_url:
-        CSRF_TRUSTED_ORIGINS.append(railway_url)
+# Add Render domain to CSRF trusted origins
+if not DEBUG:
+    render_url = config('RENDER_EXTERNAL_URL', default='')
+    if render_url:
+        CSRF_TRUSTED_ORIGINS.append(render_url)
     
-    # Add common Railway domain patterns
+    # Add common Render domain patterns
     CSRF_TRUSTED_ORIGINS.extend([
-        'https://*.railway.app',
-        'https://*.up.railway.app',
-        'http://*.railway.app',
-        'http://*.up.railway.app'
+        'https://*.onrender.com',
+        'http://*.onrender.com'
     ])
 
 # Add custom trusted origins
